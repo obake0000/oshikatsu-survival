@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>推し活サバイバル 〜3分で、今月を乗り切れ。〜</title>
+<link rel="icon" href="app_icon.png">
+<style>
+  :root{
+    --bg0:#1a0d2e; --bg1:#2a1148; --panel:#3a1a5e;
+    --gold:#ffcf3f; --gold2:#e8a017;
+    --pink:#ff3d8b; --pink2:#ff7ac0;
+    --life:#ffcf3f; --oshi:#ff3d8b;
+    --txt:#fff; --shadow:rgba(0,0,0,.45);
+    /* ちびアクスタのクロップ（微調整パネルで変更） */
+    --cbw:56px; --cbh:133px; --cx:-4px; --cy:-7px; --cw:187px; --ch:234px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    font-family:"Hiragino Maru Gothic ProN","Yu Gothic UI","Meiryo",sans-serif;
+    background:radial-gradient(circle at 50% 0%, #3a1a5e 0%, var(--bg0) 70%);
+    color:var(--txt); overflow:hidden; user-select:none;
+    display:flex; justify-content:center; align-items:center;
+  }
+  #app{
+    position:relative; width:100%; max-width:460px; height:100%; max-height:920px;
+    display:flex; flex-direction:column; padding:10px 12px 14px; gap:9px; overflow:hidden;
+  }
+  /* プレイ画面の背景＝専用の部屋背景 */
+  #app::before{content:""; position:absolute; inset:0; z-index:-2;
+    background:url("bg_room.png") center/cover no-repeat;
+    filter:brightness(.7) saturate(1.15);}
+  #app::after{content:""; position:absolute; inset:0; z-index:-1;
+    background:
+      radial-gradient(circle at 80% 10%, rgba(255,61,139,.14), transparent 45%),
+      radial-gradient(circle at 12% 28%, rgba(155,89,255,.16), transparent 45%),
+      linear-gradient(180deg, rgba(12,5,24,.25), rgba(12,5,24,.6));}
+
+  /* ---------- 上段ステータス ---------- */
+  .topbar{display:flex; gap:8px;}
+  .stat{
+    flex:1; display:flex; align-items:center; gap:6px; justify-content:center;
+    background:linear-gradient(180deg,#42206e,#2a1148);
+    border:2px solid #6a3aa0; border-radius:14px; padding:8px 6px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.15), 0 3px 0 var(--shadow);
+  }
+  .stat .lbl{font-size:12px; color:#d6b8ff; font-weight:700;}
+  .stat .val{font-size:22px; font-weight:900; letter-spacing:1px;}
+  #time .val{color:var(--pink2); font-variant-numeric:tabular-nums;}
+  #money .val{color:var(--gold);}
+  .stat .ico{font-size:18px;}
+
+  /* ---------- メーター ---------- */
+  .meter-wrap{
+    background:linear-gradient(180deg,#2a1148,#1d0c36);
+    border:2px solid #6a3aa0; border-radius:16px; padding:10px 12px 12px;
+    box-shadow:0 3px 0 var(--shadow);
+  }
+  .meter-labels{display:flex; justify-content:space-between; font-weight:900; font-size:15px; margin-bottom:6px;}
+  .meter-labels .l{color:var(--gold);}
+  .meter-labels .r{color:var(--pink2);}
+  .meter-banner{height:42px; background:url("meter_banner.png") center/contain no-repeat; margin-bottom:4px;}
+  .meter{
+    position:relative; height:26px; border-radius:14px; overflow:hidden;
+    background:#160826; border:2px solid #000; box-shadow:inset 0 2px 6px rgba(0,0,0,.6);
+  }
+  .meter .fill-life{position:absolute; left:0; top:0; bottom:0;
+    background:repeating-linear-gradient(90deg,#ffd84d,#ffd84d 9px,#e8a017 9px,#e8a017 18px);
+    transition:width .5s cubic-bezier(.4,1.5,.5,1);}
+  .meter .fill-oshi{position:absolute; right:0; top:0; bottom:0;
+    background:repeating-linear-gradient(90deg,#ff5ba0,#ff5ba0 9px,#ff2d80 9px,#ff2d80 18px);
+    transition:width .5s cubic-bezier(.4,1.5,.5,1);}
+  .meter .knob{position:absolute; top:-4px; width:14px; height:34px; margin-left:-7px;
+    background:linear-gradient(180deg,#fff,#cfd); border:2px solid #7a4ab0; border-radius:4px;
+    box-shadow:0 0 8px #fff,0 2px 4px rgba(0,0,0,.5); transition:left .5s cubic-bezier(.4,1.5,.5,1); z-index:3;}
+  .warn{margin-top:6px; text-align:right; font-size:12px; font-weight:800; color:#ffd84d; min-height:16px;}
+  /* 沼ゲージ */
+  .numa{display:flex; align-items:center; gap:7px; margin-top:2px;}
+  .numa .nlbl{font-size:12px; font-weight:900; color:#ff7ac0;}
+  .numa-track{flex:1; height:9px; border-radius:5px; background:#160826; border:1px solid #5a2f90; overflow:hidden;}
+  .numa-track > b{display:block; height:100%; width:0;
+    background:linear-gradient(90deg,#9b59ff,#ff3d8b,#ffd84d); transition:width .35s, filter .2s;}
+  .numa .nmul{font-size:12px; font-weight:900; color:#ffd84d; width:38px; text-align:right; font-variant-numeric:tabular-nums;}
+  /* 判断タイマー */
+  .dtimer{height:8px; border-radius:5px; background:#160826; border:1px solid #5a2f90; overflow:hidden; margin:2px 2px 0;}
+  .dtimer > i{display:block; height:100%; width:100%;
+    background:linear-gradient(90deg,#5be0a0,#ffd84d,#ff3d8b);}
+  .dtimer.run > i{animation:drain linear forwards;}
+  @keyframes drain{from{width:100%;}to{width:0%;}}
+  .dtimer.warn-flash > i{filter:drop-shadow(0 0 4px #ff3d8b);}
+
+  /* ---------- カレンダー ---------- */
+  .cal{display:flex; align-items:center; gap:8px; justify-content:center; font-weight:800; font-size:13px; color:#d6b8ff;}
+  .cal .day{font-size:18px; color:#fff;}
+  .cal .bar{flex:1; height:6px; border-radius:3px; background:#2a1148; overflow:hidden; border:1px solid #5a2f90;}
+  .cal .bar > i{display:block; height:100%; background:linear-gradient(90deg,#9b59ff,#ff3d8b); width:0; transition:width .4s;}
+
+  /* ---------- イベントカード ---------- */
+  .stage{flex:1; display:flex; flex-direction:column; justify-content:center; position:relative; min-height:0;}
+  .card{
+    color:#3a1a2e; text-align:center; position:relative;
+    background:url("card_frame.png") center/100% 100% no-repeat;
+    padding:64px 34px 40px; min-height:230px;
+    display:flex; flex-direction:column; justify-content:center; align-items:center;
+  }
+  .card .tag{position:absolute; left:50%; top:54px; transform:translateX(-50%);
+    background:var(--pink); color:#fff; font-size:12px; font-weight:900;
+    padding:3px 14px; border-radius:12px; letter-spacing:1px; box-shadow:0 2px 4px rgba(0,0,0,.2);}
+  .card .emoji{font-size:46px; margin:14px 0 6px;}
+  .card h2{font-size:23px; font-weight:900; line-height:1.25;
+    background:linear-gradient(180deg,#ff3d8b,#c01060); -webkit-background-clip:text; background-clip:text; color:transparent;
+    text-shadow:0 1px 0 rgba(255,255,255,.6); margin-bottom:6px;}
+  .card p{font-size:14px; font-weight:700; color:#6a4a5e; line-height:1.4;}
+
+  /* リアクション吹き出し */
+  .reaction{
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%) scale(.6);
+    background:#fff; color:#c01060; font-weight:900; font-size:19px; padding:14px 22px;
+    border-radius:18px; border:3px solid var(--pink); box-shadow:0 6px 18px rgba(0,0,0,.4);
+    text-align:center; opacity:0; pointer-events:none; z-index:20; max-width:84%;
+  }
+  .reaction.show{animation:pop .9s ease;}
+  @keyframes pop{
+    0%{opacity:0; transform:translate(-50%,-50%) scale(.5);}
+    15%{opacity:1; transform:translate(-50%,-62%) scale(1.08);}
+    80%{opacity:1; transform:translate(-50%,-66%) scale(1);}
+    100%{opacity:0; transform:translate(-50%,-78%) scale(1);}
+  }
+  .whisper{position:absolute; left:50%; top:6px; transform:translateX(-50%); z-index:22;
+    background:rgba(8,3,18,.82); color:#caa8e8; font-size:12px; font-weight:700; font-style:italic;
+    padding:6px 14px; border-radius:14px; border:1px solid #5a2f90; white-space:nowrap; max-width:94%;
+    overflow:hidden; text-overflow:ellipsis; animation:whisp 2.6s ease both;}
+  @keyframes whisp{0%{opacity:0; transform:translate(-50%,-8px);}12%{opacity:1; transform:translate(-50%,0);}85%{opacity:1;}100%{opacity:0; transform:translate(-50%,-8px);}}
+  .facefx{position:absolute; left:2px; bottom:2px; width:104px; opacity:0; pointer-events:none; z-index:16;
+    filter:drop-shadow(0 4px 8px rgba(0,0,0,.6));}
+  .facefx.show{animation:faceIn 1s ease;}
+  @keyframes faceIn{0%{opacity:0; transform:translateY(24px) scale(.7);}18%{opacity:1; transform:translateY(0) scale(1.05);}80%{opacity:1; transform:translateY(0) scale(1);}100%{opacity:0; transform:translateY(0) scale(1);}}
+  .float{position:absolute; font-weight:900; font-size:18px; pointer-events:none; z-index:21;
+    animation:rise 1s ease forwards; text-shadow:0 2px 4px rgba(0,0,0,.5);}
+  @keyframes rise{0%{opacity:0; transform:translateY(0) scale(.8);}20%{opacity:1;}100%{opacity:0; transform:translateY(-60px) scale(1.1);}}
+
+  /* ---------- 2択ボタン ---------- */
+  .choices{display:flex; gap:10px;}
+  .btn{
+    flex:1; border:none; border-radius:18px; padding:16px 8px 18px; cursor:pointer;
+    font-weight:900; color:#fff; font-size:20px; position:relative;
+    display:flex; flex-direction:column; align-items:center; gap:2px;
+    box-shadow:0 6px 0 rgba(0,0,0,.4); transition:transform .07s, box-shadow .07s;
+  }
+  .btn .bico{font-size:30px;}
+  .btn .sub{font-size:11px; font-weight:700; opacity:.85;}
+  .btn:active{transform:translateY(5px); box-shadow:0 1px 0 rgba(0,0,0,.4);}
+  .btn.life{background:url("btn_gold.png") center/100% 100% no-repeat; color:#5a3a00; border:none; box-shadow:none; filter:drop-shadow(0 4px 3px rgba(0,0,0,.45)); text-shadow:0 1px 2px rgba(255,255,255,.5);}
+  .btn.oshi{background:url("btn_pink.png") center/100% 100% no-repeat; border:none; box-shadow:none; filter:drop-shadow(0 4px 3px rgba(0,0,0,.45)); text-shadow:0 1px 2px rgba(0,0,0,.4);}
+  .btn .bico img{width:40px; height:40px; object-fit:contain; display:block; filter:drop-shadow(0 2px 2px rgba(0,0,0,.3));}
+  .btn:disabled{filter:grayscale(.4) brightness(.85);}
+
+  /* ---------- オーバーレイ（開始/結果） ---------- */
+  .overlay{position:absolute; inset:0; background:rgba(12,4,24,.92); z-index:50;
+    display:flex; flex-direction:column; justify-content:center; align-items:center; padding:24px; text-align:center; gap:14px;}
+  .overlay.hidden{display:none;}
+  #startOverlay{background:#0c0418 url("title_main.png") center/cover no-repeat;
+    justify-content:flex-end; padding-bottom:40px; gap:12px;}
+  #endOverlay{background-color:#0c0418; justify-content:flex-start; padding:0 0 20px; gap:12px; overflow-y:auto;}
+  .endart{width:100%; aspect-ratio:1/1; flex:0 0 auto;
+    background:url("endings_2x2.png") no-repeat; background-size:200% 200%;}
+  #endOverlay.end-pos-GOOD   .endart{background-position:0% 0%;}
+  #endOverlay.end-pos-NORMAL .endart{background-position:100% 0%;}
+  #endOverlay.end-pos-BAD    .endart{background-position:0% 100%;}
+  #endOverlay.end-pos-LEGEND .endart{background-position:100% 100%;}
+  .fate{max-width:340px; margin:0 16px; color:#ff9ec4; font-weight:800; font-size:13px; line-height:1.6; text-align:center; font-style:italic;}
+  .scrim{background:rgba(12,4,24,.78); border:2px solid #6a3aa0; border-radius:16px; padding:12px 18px; display:flex; flex-direction:column; gap:10px; align-items:center; backdrop-filter:blur(2px);}
+  /* デスクのちびアクスタ装飾 */
+  .chibi{position:absolute; right:2px; bottom:84px; width:var(--cbw); height:var(--cbh); opacity:.92; pointer-events:none; z-index:5;
+    background:url("chibi_sheet.png") var(--cx) var(--cy) / var(--cw) var(--ch) no-repeat;
+    filter:drop-shadow(0 4px 6px rgba(0,0,0,.55));}
+  .title-jp{font-size:34px; font-weight:900; line-height:1.15;
+    background:linear-gradient(180deg,#ffd84d,#ff3d8b); -webkit-background-clip:text; background-clip:text; color:transparent;
+    filter:drop-shadow(0 3px 0 rgba(0,0,0,.5));}
+  .copy{font-size:15px; color:#d6b8ff; font-weight:700;}
+  .month-info{background:#2a1148; border:2px solid #6a3aa0; border-radius:16px; padding:16px 20px; font-size:15px; line-height:1.9; font-weight:700;}
+  .month-info b{color:var(--gold);}
+  .big-btn{margin-top:6px; background:linear-gradient(180deg,#ff5ba0,#e0186e); color:#fff; border:3px solid #fff;
+    border-radius:18px; padding:16px 40px; font-size:22px; font-weight:900; cursor:pointer; box-shadow:0 6px 0 rgba(0,0,0,.4);}
+  .big-btn:active{transform:translateY(4px); box-shadow:0 2px 0 rgba(0,0,0,.4);}
+
+  .end-badge{font-size:30px; font-weight:900; padding:6px 24px; border-radius:14px; border:3px solid #fff;}
+  .end-GOOD{background:linear-gradient(180deg,#5be0a0,#13a060);}
+  .end-NORMAL{background:linear-gradient(180deg,#7aa0ff,#3050c0);}
+  .end-BAD{background:linear-gradient(180deg,#888,#444);}
+  .end-LEGEND{background:linear-gradient(180deg,#ffd84d,#ff3d8b); animation:glow 1s infinite alternate;}
+  @keyframes glow{from{filter:drop-shadow(0 0 4px #ffd84d);}to{filter:drop-shadow(0 0 16px #ff3d8b);}}
+  .end-title{font-size:24px; font-weight:900;}
+  .end-msg{font-size:14px; color:#d6b8ff; font-weight:700; line-height:1.6; max-width:320px;}
+  .end-stats{font-size:13px; color:#fff; background:#2a1148; border-radius:12px; padding:10px 16px; line-height:1.8;}
+  .titlebox{background:#42206e; border:2px solid var(--gold); border-radius:12px; padding:8px 16px; font-weight:900; color:var(--gold); font-size:16px;}
+
+  /* ---------- OPムービー & 紙芝居 ---------- */
+  #movie,#story{position:absolute; inset:0; z-index:80; background:#000; display:flex; justify-content:center; align-items:center; overflow:hidden;}
+  #movie.hidden,#story.hidden{display:none;}
+  #movie video{width:100%; height:100%; object-fit:cover;}
+  #story .frame{position:absolute; inset:0; background-size:cover; background-position:center; opacity:0; transition:opacity .6s ease;}
+  #story .frame.show{opacity:1;}
+  #story .vignette{position:absolute; inset:0; pointer-events:none;
+    background:linear-gradient(180deg, rgba(0,0,0,.25), transparent 25%, transparent 75%, rgba(0,0,0,.55));}
+  .skip{position:absolute; right:12px; bottom:14px; z-index:90; background:rgba(255,61,139,.85); color:#fff;
+    border:2px solid #fff; border-radius:22px; padding:11px 22px; font-weight:900; font-size:15px; cursor:pointer;
+    box-shadow:0 3px 10px rgba(0,0,0,.5);}
+  .skip:active{transform:translateY(2px);}
+  .tap-hint{position:absolute; left:50%; bottom:18px; transform:translateX(-50%); z-index:85; color:rgba(255,255,255,.7);
+    font-size:12px; font-weight:700; animation:blink 1.4s infinite;}
+  @keyframes blink{0%,100%{opacity:.3;}50%{opacity:.9;}}
+  #story .story-cap{position:absolute; left:16px; right:16px; bottom:58px; z-index:86;
+    background:rgba(10,4,22,.8); border:1px solid #6a3aa0; border-radius:14px; padding:14px 18px;
+    color:#fff; font-size:16px; font-weight:800; line-height:1.75; letter-spacing:.3px;
+    text-shadow:0 2px 4px #000; box-shadow:0 4px 16px rgba(0,0,0,.5);
+    opacity:0; transform:translateY(8px); transition:opacity .5s ease .15s, transform .5s ease .15s;}
+  #story .story-cap.show{opacity:1; transform:translateY(0);}
+  #story .progress{position:absolute; top:10px; left:0; right:0; display:flex; gap:5px; justify-content:center; z-index:85;}
+  #story .progress i{width:26px; height:4px; border-radius:2px; background:rgba(255,255,255,.3);}
+  #story .progress i.on{background:var(--pink);}
+
+  /* ---------- 微調整パネル ---------- */
+  .gear{position:absolute; right:10px; top:64px; z-index:60; width:38px; height:38px; border-radius:50%;
+    background:rgba(20,8,40,.85); border:2px solid #6a3aa0; color:#fff; font-size:18px; cursor:pointer;
+    box-shadow:0 2px 6px rgba(0,0,0,.5);}
+  .panel{position:absolute; inset:0; z-index:70; background:rgba(8,3,18,.96); display:flex; flex-direction:column;
+    padding:14px; gap:8px; overflow-y:auto; font-size:13px;}
+  .panel.hidden{display:none;}
+  .panel h3{font-size:16px; color:var(--pink2); margin:6px 0 2px; border-bottom:1px solid #5a2f90; padding-bottom:3px;}
+  .panel .row{display:flex; align-items:center; gap:8px;}
+  .panel .row label{flex:0 0 116px; color:#d6b8ff; font-weight:700;}
+  .panel .row input[type=range]{flex:1; accent-color:var(--pink);}
+  .panel .row .v{flex:0 0 56px; text-align:right; font-variant-numeric:tabular-nums; color:var(--gold); font-weight:800;}
+  .panel .cssout{background:#160826; border:1px solid #5a2f90; border-radius:8px; padding:8px; font-family:monospace;
+    font-size:11px; color:#9be0a0; white-space:pre-wrap; word-break:break-all;}
+  .panel .logbox{background:#0d0420; border:1px solid #5a2f90; border-radius:8px; padding:8px; font-family:monospace;
+    font-size:10px; color:#cfd; white-space:pre-wrap; height:150px; overflow-y:auto; line-height:1.5;}
+  .panel .btns{display:flex; flex-wrap:wrap; gap:6px;}
+  .panel .pbtn{flex:1; min-width:88px; background:linear-gradient(180deg,#7a4ab0,#4a2080); color:#fff; border:1px solid #9b59ff;
+    border-radius:8px; padding:9px 6px; font-weight:800; font-size:12px; cursor:pointer;}
+  .panel .pbtn.gold{background:linear-gradient(180deg,#ffd84d,#e8a017); color:#5a3a00; border-color:#fff;}
+  .panel .pbtn:active{transform:translateY(2px);}
+  .panel .close{align-self:flex-end; background:none; border:none; color:#fff; font-size:24px; cursor:pointer; line-height:1;}
+  .panel .note{color:#9a7ac0; font-size:11px;}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- 上段 -->
+  <div class="topbar">
+    <div class="stat" id="time"><span class="ico">⏰</span><span class="lbl">TIME</span><span class="val" id="timeVal">3:00</span></div>
+    <div class="stat" id="money"><span class="ico">👛</span><span class="lbl">所持金</span><span class="val" id="moneyVal">¥0</span></div>
+  </div>
+
+  <!-- メーター -->
+  <div class="meter-wrap">
+    <div class="meter-banner"></div>
+    <div class="meter">
+      <div class="fill-life" id="fillLife"></div>
+      <div class="fill-oshi" id="fillOshi"></div>
+      <div class="knob" id="knob"></div>
+    </div>
+    <div class="warn" id="warn"></div>
+    <div class="numa"><span class="nlbl">🔥沼</span><i class="numa-track"><b id="numaBar"></b></i><span class="nmul" id="numaMul">x1.0</span></div>
+  </div>
+
+  <!-- カレンダー -->
+  <div class="cal">
+    <span>📅 <span class="day" id="calDay">1</span>日目</span>
+    <span class="bar"><i id="calBar"></i></span>
+    <span>30日</span>
+  </div>
+
+  <!-- イベント -->
+  <div class="stage">
+    <div class="card" id="card">
+      <span class="tag" id="cardTag">EVENT</span>
+      <img id="cardImg" alt="" onerror="this.style.display='none';document.getElementById('cardEmoji').style.display='block';" style="display:none; width:120px; height:120px; object-fit:contain; margin:8px auto 4px; filter:drop-shadow(0 3px 6px rgba(0,0,0,.3));">
+      <div class="emoji" id="cardEmoji">💖</div>
+      <h2 id="cardTitle">推し活サバイバル</h2>
+      <p id="cardText">下のボタンでスタート</p>
+    </div>
+    <div class="reaction" id="reaction"></div>
+    <img class="facefx" id="faceFx" alt="" aria-hidden="true">
+    <div class="chibi" aria-hidden="true"></div>
+  </div>
+
+  <!-- 判断タイマー -->
+  <div class="dtimer"><i id="dbar"></i></div>
+
+  <!-- 2択 -->
+  <div class="choices">
+    <button class="btn life" id="btnL" onclick="choose(0)">
+      <span class="bico" id="btnLico">🏠</span><span id="btnLtxt">払う</span><span class="sub" id="btnLsub"></span>
+    </button>
+    <button class="btn oshi" id="btnR" onclick="choose(1)">
+      <span class="bico" id="btnRico">💖</span><span id="btnRtxt">後で払う</span><span class="sub" id="btnRsub"></span>
+    </button>
+  </div>
+
+  <!-- 開始画面 -->
+  <div class="overlay" id="startOverlay">
+    <div class="scrim">
+      <div class="copy">「3分で、今月を乗り切れ。」</div>
+      <div class="month-info" id="monthInfo"></div>
+    </div>
+    <button class="big-btn" onclick="startGame()">▶ スタート</button>
+  </div>
+
+  <!-- OPムービー -->
+  <div id="movie" class="hidden">
+    <video id="opVideo" playsinline muted preload="auto"></video>
+    <button class="skip" onclick="skipMovie()">スキップ ▶</button>
+  </div>
+
+  <!-- 紙芝居（プロローグ / エンディング） -->
+  <div id="story" class="hidden" onclick="storyNext()">
+    <div class="frame" id="storyFrame"></div>
+    <div class="vignette"></div>
+    <div class="story-cap" id="storyCap"></div>
+    <div class="progress" id="storyProg"></div>
+    <button class="skip" id="storySkipBtn" onclick="event.stopPropagation(); storySkip()">スキップ ▶</button>
+    <div class="tap-hint">タップで進む</div>
+  </div>
+
+  <!-- 微調整ボタン＆パネル -->
+  <button class="gear" id="sndBtn" style="right:52px;" onclick="toggleSound()" title="音 ON/OFF">🔊</button>
+  <button class="gear" onclick="togglePanel()" title="微調整">⚙</button>
+  <div class="panel hidden" id="panel">
+    <button class="close" onclick="togglePanel()">×</button>
+
+    <h3>🧍 ちびアクスタ位置（即時反映）</h3>
+    <div class="row"><label>枠 横幅</label><input type="range" id="t_cbw" min="40" max="110" step="1"><span class="v" id="v_cbw"></span></div>
+    <div class="row"><label>枠 高さ</label><input type="range" id="t_cbh" min="90" max="190" step="1"><span class="v" id="v_cbh"></span></div>
+    <div class="row"><label>画像 X位置</label><input type="range" id="t_cx" min="-120" max="20" step="1"><span class="v" id="v_cx"></span></div>
+    <div class="row"><label>画像 Y位置</label><input type="range" id="t_cy" min="-80" max="20" step="1"><span class="v" id="v_cy"></span></div>
+    <div class="row"><label>画像 拡大幅</label><input type="range" id="t_cw" min="120" max="320" step="1"><span class="v" id="v_cw"></span></div>
+    <div class="row"><label>画像 拡大高</label><input type="range" id="t_ch" min="150" max="400" step="1"><span class="v" id="v_ch"></span></div>
+    <div class="cssout" id="cssout"></div>
+    <div class="note">↑ index.html の <code>.chibi</code> にこの値を貼れば確定できます</div>
+
+    <h3>⚖️ ゲームバランス（次のプレイから）</h3>
+    <div class="row"><label>初期所持金</label><input type="range" id="t_money" min="50000" max="160000" step="5000"><span class="v" id="v_money"></span></div>
+    <div class="row"><label>家賃</label><input type="range" id="t_rent" min="40000" max="100000" step="5000"><span class="v" id="v_rent"></span></div>
+    <div class="row"><label>制限時間(秒)</label><input type="range" id="t_time" min="60" max="300" step="10"><span class="v" id="v_time"></span></div>
+    <div class="row"><label>GOOD閾値(推し)</label><input type="range" id="t_good" min="40" max="90" step="1"><span class="v" id="v_good"></span></div>
+    <div class="row"><label>LEGEND閾値(推し)</label><input type="range" id="t_leg" min="70" max="100" step="1"><span class="v" id="v_leg"></span></div>
+    <div class="row"><label>LEGEND認知度</label><input type="range" id="t_reco" min="4" max="20" step="1"><span class="v" id="v_reco"></span></div>
+
+    <h3>📊 現在の内部ステータス</h3>
+    <div class="cssout" id="liveStats">プレイ中に表示</div>
+
+    <h3>📝 プレイログ / レポート</h3>
+    <div class="logbox" id="logbox">（まだログがありません）</div>
+    <div class="btns">
+      <button class="pbtn gold" onclick="downloadReport()">📄 レポート(.txt)</button>
+      <button class="pbtn" onclick="downloadJSON()">⬇ 生ログ(.json)</button>
+      <button class="pbtn" onclick="copyReport()">📋 コピー</button>
+      <button class="pbtn" onclick="clearLog()">🗑 クリア</button>
+    </div>
+    <div class="btns">
+      <button class="pbtn" onclick="resetTuning()">↩ 設定リセット</button>
+    </div>
+  </div>
+
+  <!-- 結果画面（背景＝生成エンディング画像 / セリフは画像に内蔵） -->
+  <div class="overlay hidden" id="endOverlay">
+    <div class="endart" id="endArt"></div>
+    <div class="fate" id="endFate"></div>
+    <div class="scrim">
+      <div class="titlebox" id="endTitleName"></div>
+      <div class="end-stats" id="endStats"></div>
+      <button class="big-btn" style="background:linear-gradient(180deg,#7a4ab0,#4a2080); font-size:17px; padding:12px 28px;" onclick="watchEnding()">🎬 エンディングを見る</button>
+      <button class="big-btn" onclick="resetGame()">🔄 もう一度</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===================== 状態 ===================== */
+const S = {};
+let queue = [], idx = 0, running = false, timeLeft = 180, tick = null, busy = false;
+let decisionTimer = null, decisionStart = 0;
+const TOTAL_TIME = 180, MAX_DAY = 30, DECISION_MS = 6500;
+const now = ()=> (window.performance && performance.now) ? performance.now() : 0;
+
+/* ===================== 微調整(TUNING) ===================== */
+const DEFAULTS = {cbw:56,cbh:133,cx:-4,cy:-7,cw:187,ch:234, money:95000,rent:70000,time:180, good:60,leg:88,reco:9};
+let TUNING = {...DEFAULTS};
+const TKEY = "oshikatsu_tuning";
+
+function loadTuning(){
+  try{ const s=JSON.parse(localStorage.getItem(TKEY)||"{}"); TUNING={...DEFAULTS,...s}; }catch(e){ TUNING={...DEFAULTS}; }
+}
+function saveTuning(){ try{ localStorage.setItem(TKEY,JSON.stringify(TUNING)); }catch(e){} }
+function applyChibi(){
+  const r=document.documentElement.style;
+  r.setProperty("--cbw",TUNING.cbw+"px"); r.setProperty("--cbh",TUNING.cbh+"px");
+  r.setProperty("--cx",TUNING.cx+"px");   r.setProperty("--cy",TUNING.cy+"px");
+  r.setProperty("--cw",TUNING.cw+"px");   r.setProperty("--ch",TUNING.ch+"px");
+}
+function updateCssOut(){
+  document.getElementById("cssout").textContent =
+`.chibi{
+  width:${TUNING.cbw}px; height:${TUNING.cbh}px;
+  background:url("chibi_sheet.png") ${TUNING.cx}px ${TUNING.cy}px / ${TUNING.cw}px ${TUNING.ch}px no-repeat;
+}`;
+}
+const CHIBI_KEYS=["cbw","cbh","cx","cy","cw","ch"];
+const BAL_KEYS=["money","rent","time","good","leg","reco"];
+function fmt(key,val){
+  if(key==="money"||key==="rent") return "¥"+(+val).toLocaleString();
+  if(key==="time") return val+"秒";
+  if(CHIBI_KEYS.includes(key)) return val+"px";
+  return ""+val;
+}
+function initPanel(){
+  [...CHIBI_KEYS,...BAL_KEYS].forEach(key=>{
+    const inp=document.getElementById("t_"+key), v=document.getElementById("v_"+key);
+    if(!inp) return;
+    inp.value=TUNING[key]; v.textContent=fmt(key,TUNING[key]);
+    inp.oninput=()=>{
+      TUNING[key]=+inp.value; v.textContent=fmt(key,inp.value);
+      if(CHIBI_KEYS.includes(key)){ applyChibi(); updateCssOut(); }
+      saveTuning();
+    };
+  });
+  updateCssOut();
+}
+function togglePanel(){ document.getElementById("panel").classList.toggle("hidden"); updateLiveStats(); renderLog(); }
+function resetTuning(){ TUNING={...DEFAULTS}; saveTuning(); applyChibi(); initPanel(); }
+function updateLiveStats(){
+  const el=document.getElementById("liveStats"); if(!el) return;
+  if(!S || S.money===undefined){ el.textContent="プレイ中に表示"; return; }
+  el.textContent=
+`残り時間 : ${Math.max(0,Math.floor(timeLeft/60))}:${String(Math.max(0,timeLeft%60)).padStart(2,"0")}　Day ${S.day}
+所持金   : ¥${Math.max(0,S.money).toLocaleString()}
+推し活   : ${Math.round(S.oshi)} / 100
+メンタル : ${Math.round(S.mental)} / 100
+認知度   : ${S.reco}
+家賃     : ${S.rentPaid?"完納":"未払い"}`;
+}
+
+/* ===================== ログ / レポート ===================== */
+let LOG = {meta:null, entries:[], result:null};
+function snap(){ return {money:Math.max(0,Math.round(S.money)),oshi:Math.round(S.oshi),mental:Math.round(S.mental),reco:S.reco}; }
+function ts(){ try{ return new Date().toLocaleString("ja-JP"); }catch(e){ return ""; } }
+function logStart(){
+  LOG={meta:{date:ts(), money:TUNING.money, rent:TUNING.rent, time:TUNING.time}, entries:[], result:null};
+  renderLog();
+}
+function logEvent(e){ LOG.entries.push({kind:"event", day:S.day, time:timeLeft, title:e.title, isRent:!!e.isRent}); }
+function logChoice(e, side, c, before, after){
+  LOG.entries.push({kind:"choice", day:S.day, time:timeLeft, title:e.title, isRent:!!e.isRent,
+    choice:c.txt, side:side===0?"L":"R",
+    delta:{money:after.money-before.money, oshi:after.oshi-before.oshi, mental:after.mental-before.mental, reco:after.reco-before.reco},
+    after});
+  renderLog();
+}
+function logEnd(end, titleName){
+  LOG.result={date:ts(), end, title:titleName, ...snap(), rentPaid:S.rentPaid};
+  renderLog();
+}
+function entryLine(en){
+  const mmss=`${Math.floor(en.time/60)}:${String(en.time%60).padStart(2,"0")}`;
+  if(en.kind==="event") return `[Day${en.day} 残${mmss}] ${en.isRent?"💰":"▶"} ${en.title}`;
+  const d=en.delta, parts=[];
+  if(d.money) parts.push(`所持金${d.money>0?"+":""}${d.money.toLocaleString()}`);
+  if(d.oshi)  parts.push(`推し${d.oshi>0?"+":""}${d.oshi}`);
+  if(d.mental)parts.push(`ﾒﾝﾀﾙ${d.mental>0?"+":""}${d.mental}`);
+  if(d.reco)  parts.push(`認知${d.reco>0?"+":""}${d.reco}`);
+  return `   └ ${en.choice} ｜ ${parts.join(" ")||"変化なし"}  （¥${en.after.money.toLocaleString()} 推${en.after.oshi} 心${en.after.mental} 認${en.after.reco}）`;
+}
+function buildReport(){
+  if(!LOG.meta) return "（プレイ記録がありません。1プレイすると記録されます）";
+  const L=[];
+  L.push("=== 推し活サバイバル プレイレポート ===");
+  L.push(`生成: ${ts()}`);
+  L.push(`開始条件  初期所持金 ¥${LOG.meta.money.toLocaleString()} / 家賃 ¥${LOG.meta.rent.toLocaleString()} / 制限 ${LOG.meta.time}秒`);
+  L.push("");
+  LOG.entries.forEach(en=>L.push(entryLine(en)));
+  L.push("");
+  if(LOG.result){
+    const r=LOG.result;
+    L.push(`=== 結果: ${r.end} END 「${r.title}」 ===`);
+    L.push(`所持金 ¥${r.money.toLocaleString()} / 家賃 ${r.rentPaid?"完納":"滞納"} / 推し活 ${r.oshi} / メンタル ${r.mental} / 認知度 ${r.reco}`);
+  } else {
+    L.push("（プレイ途中 — まだ結果は出ていません）");
+  }
+  return L.join("\n");
+}
+function renderLog(){
+  const box=document.getElementById("logbox"); if(!box) return;
+  box.textContent = buildReport();
+  box.scrollTop = box.scrollHeight;
+}
+function stamp(){ try{ const d=new Date(); const p=n=>String(n).padStart(2,"0");
+  return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}`;
+}catch(e){ return "log"; } }
+function dl(text, name, type){
+  const blob=new Blob([text],{type}); const url=URL.createObjectURL(blob);
+  const a=document.createElement("a"); a.href=url; a.download=name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function downloadReport(){ dl(buildReport(), `推し活レポート_${stamp()}.txt`, "text/plain;charset=utf-8"); }
+function downloadJSON(){ dl(JSON.stringify(LOG,null,2), `推し活ログ_${stamp()}.json`, "application/json"); }
+function copyReport(){
+  const t=buildReport();
+  if(navigator.clipboard){ navigator.clipboard.writeText(t).then(()=>flashNote("📋 コピーしました")); }
+  else flashNote("コピー非対応の環境です");
+}
+function clearLog(){ LOG={meta:null,entries:[],result:null}; renderLog(); flashNote("🗑 ログをクリアしました"); }
+function flashNote(msg){ const b=document.getElementById("logbox"); if(b){ const old=b.textContent; b.textContent=msg+"\n\n"+old; } }
+
+/* ===================== イベント定義 ===================== *
+ * each: tag, emoji, title, text, price(任意,表示用),
+ *   L(生活寄り) / R(推し活寄り) : {txt, ico, sub, eff:{money,oshi,mental,reco}, react}
+ * effは状態への加算。reactは演出セリフ。
+ * 「正解・不正解を作らない」= どちらにも痛みと得を入れる。
+ */
+const EVENTS = [
+  { tag:"EVENT", emoji:"🛒", title:"限定アクスタ発売！", text:"推しのビジュが良すぎる……（¥4,800）",
+    L:{ico:"🛡️",txt:"我慢する",sub:"耐える",eff:{money:0,oshi:-2,mental:-12,reco:0},react:"⛅ 物欲に勝った…けど心が痛い"},
+    R:{ico:"🛒",txt:"買う",sub:"-¥4,800",eff:{money:-4800,oshi:14,mental:8,reco:1},react:"✨ 我が家に推しが来た！"} },
+
+  { tag:"ガチャ", emoji:"🎲", title:"ランダム缶バッジ", text:"推しだけ出ない…（1個¥600）",
+    L:{ico:"🛡️",txt:"交換を探す",sub:"我慢",eff:{money:0,oshi:3,mental:-6,reco:0},react:"🔎 交換相手を探す旅へ…"},
+    R:{ico:"🎲",txt:"追いガチャ",sub:"-¥3,000",eff:{money:-3000,oshi:8,mental:-4,reco:0},react:"😇 沼の底が見えない"} },
+
+  { tag:"通販", emoji:"📦", title:"送料の方が高い", text:"商品¥600 / 送料¥800…",
+    L:{ico:"🧊",txt:"冷静になる",sub:"閉じる",eff:{money:0,oshi:0,mental:-3,reco:0},react:"😌 今日の私、えらい"},
+    R:{ico:"🛒",txt:"買う",sub:"-¥1,400",eff:{money:-1400,oshi:7,mental:5,reco:0},react:"💸 送料も愛だから…"} },
+
+  { tag:"現場", emoji:"🎫", title:"現場遠征の誘い", text:"遠征費ざっくり¥15,000…行く？",
+    L:{ico:"😢",txt:"涙の不参加",sub:"見送る",eff:{money:0,oshi:-4,mental:-16,reco:0},react:"😭 みんなの現場レポが刺さる"},
+    R:{ico:"🚄",txt:"行く",sub:"-¥15,000",eff:{money:-15000,oshi:22,mental:14,reco:2},react:"🔥 現場は全てを浄化する"} },
+
+  { tag:"配信", emoji:"📱", title:"配信で名前を読まれそう", text:"スパチャ投げる…？",
+    L:{ico:"🫶",txt:"心で応援",sub:"無料",eff:{money:0,oshi:1,mental:-5,reco:0},react:"🥲 心の声は届かなかった"},
+    R:{ico:"💝",txt:"投げ銭",sub:"-¥5,000",eff:{money:-5000,oshi:12,mental:6,reco:3},react:"📣 名前読まれた！？！？"} },
+
+  { tag:"生活", emoji:"🥶", title:"冷蔵庫に何もない", text:"食費に回す？グッズ代に回す？",
+    L:{ico:"🥕",txt:"スーパーへ",sub:"-¥3,000",eff:{money:-3000,oshi:0,mental:6,reco:0},react:"🍳 ちゃんと生きてて偉い"},
+    R:{ico:"🍙",txt:"グッズ代に",sub:"節約飯",eff:{money:0,oshi:9,mental:-10,reco:0},react:"🍞 推しは食べ物（精神論）"} },
+
+  { tag:"SNS", emoji:"💔", title:"友達が神席を当てた", text:"おめでとう…って言える？",
+    L:{ico:"🎉",txt:"一緒に喜ぶ",sub:"大人",eff:{money:0,oshi:2,mental:4,reco:0},react:"😊 推しが幸せならヨシ！"},
+    R:{ico:"🌧️",txt:"ちょっと病む",sub:"-メンタル",eff:{money:0,oshi:0,mental:-14,reco:0},react:"🫠 なんで私じゃないの……"} },
+
+  { tag:"あるある", emoji:"🎨", title:"推しの髪色が変わった", text:"新ビジュ尊い……記念に？",
+    L:{ico:"📷",txt:"画像保存で耐える",sub:"無料",eff:{money:0,oshi:2,mental:-4,reco:0},react:"📲 待受は更新した"},
+    R:{ico:"🛒",txt:"記念グッズ購入",sub:"-¥3,500",eff:{money:-3500,oshi:11,mental:7,reco:1},react:"💖 新ビジュをこの手に"} },
+
+  { tag:"SNS", emoji:"📢", title:"購入報告が流れてくる", text:"TLが戦利品で埋まってる…",
+    L:{ico:"🔇",txt:"ミュートする",sub:"防衛",eff:{money:0,oshi:0,mental:-7,reco:0},react:"🙈 見なかったことに"},
+    R:{ico:"🛒",txt:"自分も買う",sub:"-¥4,000",eff:{money:-4000,oshi:10,mental:6,reco:0},react:"🤝 同担と繋がる課金"} },
+
+  { tag:"仕事", emoji:"💼", title:"単発バイトの募集", text:"推し活軍資金を稼ぐ？休む？",
+    L:{ico:"🧢",txt:"働く",sub:"+¥8,000",eff:{money:8000,oshi:0,mental:-10,reco:0},react:"💪 +¥8,000 ゲット！"},
+    R:{ico:"🛌",txt:"寝る",sub:"配信視聴",eff:{money:0,oshi:6,mental:10,reco:0},react:"😴 アーカイブが優先です"} },
+
+  { tag:"FC", emoji:"💳", title:"ファンクラブ更新", text:"年会費の請求が来た（¥5,500）",
+    L:{ico:"🛡️",txt:"今回は退会",sub:"節約",eff:{money:0,oshi:-8,mental:-12,reco:-1},react:"💔 ご縁が切れた気がする"},
+    R:{ico:"🔁",txt:"更新する",sub:"-¥5,500",eff:{money:-5500,oshi:13,mental:5,reco:2},react:"🎟️ 推しと今年も一緒"} },
+
+  { tag:"くじ", emoji:"🎰", title:"一番くじ発見", text:"ラスワン狙う？我慢する？",
+    L:{ico:"🛡️",txt:"我慢する",sub:"撤退",eff:{money:0,oshi:0,mental:-5,reco:0},react:"😤 引かぬ強さも愛"},
+    R:{ico:"🎰",txt:"回す",sub:"-¥7,000",eff:{money:-7000,oshi:16,mental:2,reco:1},react:"🎉 上位賞きたーー！"} },
+
+  { tag:"生活", emoji:"📲", title:"スマホの分割払い", text:"今月の引き落とし日…（¥6,000）",
+    L:{ico:"🏠",txt:"ちゃんと払う",sub:"-¥6,000",eff:{money:-6000,oshi:0,mental:2,reco:0},react:"✅ 信用情報を守った"},
+    R:{ico:"😈",txt:"見て見ぬふり",sub:"延滞",eff:{money:0,oshi:5,mental:-8,reco:0},react:"📵 通知をオフにした"} },
+
+  { tag:"イベント", emoji:"🎂", title:"推しの誕生日", text:"祝い方は人それぞれ…",
+    L:{ico:"🎈",txt:"自宅で祝う",sub:"-¥1,500",eff:{money:-1500,oshi:6,mental:6,reco:0},react:"🎂 ケーキで祝った"},
+    R:{ico:"🌸",txt:"広告/フラスタ出資",sub:"-¥10,000",eff:{money:-10000,oshi:20,mental:10,reco:3},react:"🌟 推しへの愛を可視化"} },
+
+  { tag:"あるある", emoji:"🤝", title:"特典会の参加券", text:"対面で会えるチャンス…",
+    L:{ico:"🛡️",txt:"今回は見送る",sub:"我慢",eff:{money:0,oshi:-2,mental:-9,reco:0},react:"🥲 また次の機会に…"},
+    R:{ico:"🎫",txt:"参加する",sub:"-¥6,500",eff:{money:-6500,oshi:18,mental:12,reco:4},react:"😳 至近距離で目が合った"} },
+
+  { tag:"節約", emoji:"☕", title:"コンビニ寄り道", text:"新作スイーツ…？貯金…？",
+    L:{ico:"💰",txt:"貯金する",sub:"+気力",eff:{money:0,oshi:0,mental:3,reco:0},react:"🐿️ 塵も積もれば遠征費"},
+    R:{ico:"☕",txt:"ご褒美",sub:"-¥500",eff:{money:-500,oshi:2,mental:6,reco:0},react:"😋 生活に潤いを"} },
+
+  /* ===== 追加イベント（文章大幅追加分） ===== */
+  { tag:"コラボ", emoji:"🍰", title:"推しコラボカフェ開催", text:"限定メニュー＆特典ランチョン…",
+    L:{ico:"🛡️",txt:"写真だけで我慢",sub:"無料",eff:{money:0,oshi:1,mental:-8,reco:0},react:"📸 外観だけ撮って帰った"},
+    R:{ico:"🍰",txt:"予約して行く",sub:"-¥4,000",eff:{money:-4000,oshi:14,mental:10,reco:1},react:"🥤 特典コースター神引き！"} },
+
+  { tag:"ぬい", emoji:"🧸", title:"推しがぬいぐるみ化", text:"連れ歩ける推し…予約する？",
+    L:{ico:"🛡️",txt:"我慢する",sub:"耐える",eff:{money:0,oshi:-1,mental:-9,reco:0},react:"🥲 抱き枕で代用…"},
+    R:{ico:"🛒",txt:"予約する",sub:"-¥3,800",eff:{money:-3800,oshi:13,mental:12,reco:0},react:"🧸 どこへ行くにも一緒だ"} },
+
+  { tag:"写真集", emoji:"📖", title:"ソロ写真集発売", text:"特典が店舗ごとに違う…！",
+    L:{ico:"🛒",txt:"1冊だけ",sub:"-¥3,000",eff:{money:-3000,oshi:7,mental:4,reco:0},react:"📕 理性で1冊に留めた"},
+    R:{ico:"🛒",txt:"全店舗コンプ",sub:"-¥12,000",eff:{money:-12000,oshi:20,mental:8,reco:1},react:"📚 特典のために4冊…"} },
+
+  { tag:"聖地", emoji:"⛩️", title:"MV撮影地が判明", text:"聖地巡礼、行く？",
+    L:{ico:"🛡️",txt:"家で気分だけ",sub:"無料",eff:{money:0,oshi:2,mental:-5,reco:0},react:"🛏️ ストビューで巡礼した"},
+    R:{ico:"🚄",txt:"巡礼する",sub:"-¥6,000",eff:{money:-6000,oshi:15,mental:13,reco:0},react:"📍 同じ景色に泣いた"} },
+
+  { tag:"投票", emoji:"🗳️", title:"人気投票スタート", text:"課金で票を積める…",
+    L:{ico:"🫶",txt:"無料分だけ",sub:"無料",eff:{money:0,oshi:1,mental:-4,reco:0},react:"🗳️ デイリー投票は欠かさない"},
+    R:{ico:"💝",txt:"課金して票を盛る",sub:"-¥8,000",eff:{money:-8000,oshi:10,mental:3,reco:4},react:"📈 ランキングが動いた…！"} },
+
+  { tag:"衝撃", emoji:"⚡", title:"推しに熱愛報道…？", text:"TLが大荒れ。どうする？",
+    L:{ico:"🫶",txt:"信じて待つ",sub:"現場据置",eff:{money:0,oshi:2,mental:-12,reco:0},react:"🙏 推しの幸せが一番（涙）"},
+    R:{ico:"🌧️",txt:"距離を置く",sub:"推し活↓",eff:{money:0,oshi:-10,mental:-8,reco:0},react:"🚪 ちょっとだけ担降り検討"} },
+
+  { tag:"同人", emoji:"📚", title:"同人即売会", text:"戦利品を抱えて帰る？",
+    L:{ico:"🛡️",txt:"設営だけ見る",sub:"無料",eff:{money:0,oshi:3,mental:-3,reco:0},react:"👀 表紙だけ目に焼き付けた"},
+    R:{ico:"🛒",txt:"爆買い",sub:"-¥7,000",eff:{money:-7000,oshi:16,mental:9,reco:0},react:"🛍️ 紙袋がパンパンだ"} },
+
+  { tag:"サブスク", emoji:"📺", title:"配信サブスク値上げ", text:"推しの番組がそこにある…",
+    L:{ico:"💔",txt:"解約する",sub:"節約",eff:{money:0,oshi:-7,mental:-10,reco:0},react:"📉 見逃し配信を諦めた"},
+    R:{ico:"🔁",txt:"継続する",sub:"-¥1,800",eff:{money:-1800,oshi:8,mental:5,reco:0},react:"📺 推しはいつでも画面の中"} },
+
+  { tag:"LV", emoji:"🎥", title:"ライブビューイング", text:"映画館で生中継、参戦？",
+    L:{ico:"🛌",txt:"円盤を待つ",sub:"我慢",eff:{money:0,oshi:1,mental:-6,reco:0},react:"💿 リアタイは諦めた"},
+    R:{ico:"🎫",txt:"参戦する",sub:"-¥5,500",eff:{money:-5500,oshi:15,mental:11,reco:0},react:"🍿 映画館がペンラの海に"} },
+
+  { tag:"体調", emoji:"🤒", title:"熱が出た…", text:"でも今夜は現場…",
+    L:{ico:"🛌",txt:"休む",sub:"-¥2,000",eff:{money:-2000,oshi:-3,mental:12,reco:0},react:"💊 体が資本、無理しない"},
+    R:{ico:"🎫",txt:"無理して行く",sub:"気力-",eff:{money:0,oshi:12,mental:-18,reco:0},react:"🥵 記憶は曖昧だけど尊かった"} },
+
+  { tag:"SNS", emoji:"👕", title:"推しの私服が特定", text:"同じ服、ポチる？",
+    L:{ico:"📷",txt:"スクショ保存",sub:"無料",eff:{money:0,oshi:2,mental:-3,reco:0},react:"📱 待受がまた増えた"},
+    R:{ico:"🛒",txt:"同じ服を買う",sub:"-¥6,000",eff:{money:-6000,oshi:9,mental:7,reco:0},react:"👕 おそろコーデ達成"} },
+
+  { tag:"通販", emoji:"♻️", title:"完売グッズが再販", text:"逃した子をもう一度…",
+    L:{ico:"🧊",txt:"転売価格に絶望",sub:"撤退",eff:{money:0,oshi:0,mental:-9,reco:0},react:"😇 定価で買えない世界線"},
+    R:{ico:"🛒",txt:"今度こそ確保",sub:"-¥4,500",eff:{money:-4500,oshi:12,mental:8,reco:0},react:"🎉 リベンジ成功！"} },
+
+  { tag:"給料日", emoji:"💴", title:"給料日が来た！", text:"今月の使い道は…？",
+    L:{ico:"💰",txt:"生活防衛に確保",sub:"+¥12,000",eff:{money:12000,oshi:0,mental:2,reco:0},react:"🏦 大人の判断…！"},
+    R:{ico:"💝",txt:"推しに全投入",sub:"+¥4,000",eff:{money:4000,oshi:15,mental:10,reco:1},react:"💸 入った瞬間に溶ける予感"} },
+
+  { tag:"配信", emoji:"📻", title:"推しのラジオ生放送", text:"メール採用なるか…？",
+    L:{ico:"🫶",txt:"聴くだけ",sub:"無料",eff:{money:0,oshi:4,mental:6,reco:0},react:"🎧 声だけで生き返る"},
+    R:{ico:"💝",txt:"メール職人になる",sub:"気力-",eff:{money:0,oshi:6,mental:-4,reco:5},react:"📨 ラジオネーム読まれた！！"} },
+
+  { tag:"特典", emoji:"📞", title:"限定オンライン通話会", text:"1対1で話せる15秒…",
+    L:{ico:"🛡️",txt:"見送る",sub:"我慢",eff:{money:0,oshi:-2,mental:-11,reco:0},react:"🥲 緊張する前に諦めた"},
+    R:{ico:"📞",txt:"申し込む",sub:"-¥9,000",eff:{money:-9000,oshi:18,mental:14,reco:6},react:"😭 名前、覚えててくれた…"} },
+
+  { tag:"くじ", emoji:"✍️", title:"サイン入りグッズ抽選", text:"当選確率は数%…",
+    L:{ico:"🛡️",txt:"諦める",sub:"撤退",eff:{money:0,oshi:0,mental:-4,reco:0},react:"😌 沼に足を入れなかった"},
+    R:{ico:"🎰",txt:"全力で応募",sub:"-¥6,000",eff:{money:-6000,oshi:11,mental:0,reco:2},react:"🍀 一縷の望みに賭けた"} },
+
+  { tag:"生活", emoji:"📦", title:"部屋がグッズで埋まった", text:"そろそろ整理する…？",
+    L:{ico:"💰",txt:"一部売って軍資金",sub:"+¥5,000",eff:{money:5000,oshi:-6,mental:-5,reco:0},react:"💸 推しを手放す痛み…"},
+    R:{ico:"🛡️",txt:"全部とっておく",sub:"思い出",eff:{money:0,oshi:6,mental:8,reco:0},react:"🗃️ どれも捨てられない"} },
+
+  { tag:"あるある", emoji:"➕", title:"新メンバー加入", text:"箱推しの予感がする…",
+    L:{ico:"🛡️",txt:"単推しを貫く",sub:"我慢",eff:{money:0,oshi:1,mental:-3,reco:0},react:"💪 私は浮気しない"},
+    R:{ico:"🛒",txt:"箱推しに拡大",sub:"-¥5,000",eff:{money:-5000,oshi:13,mental:9,reco:0},react:"🌈 供給が倍になった…！"} },
+];
+
+/* イベント別イラスト：画像を ev_*.png として置き、USE_CATEGORY_ART=true にすると表示。
+ * ファイルが無い間は自動で絵文字にフォールバック（onerror）。 */
+let USE_CATEGORY_ART = true;
+const CATEGORY_IMG = {
+  "EVENT":"ev_goods.png","あるある":"ev_goods.png","通販":"ev_goods.png",
+  "ガチャ":"ev_gacha.png","くじ":"ev_gacha.png",
+  "現場":"ev_venue.png","イベント":"ev_event.png","配信":"ev_live.png",
+  "生活":"ev_life.png","節約":"ev_life.png","SNS":"ev_sns.png",
+  "仕事":"ev_work.png","FC":"ev_fc.png","家賃支払日":"ev_rent.png",
+  /* 追加カテゴリ（画像が無い間は絵文字にフォールバック） */
+  "コラボ":"ev_collab.png","ぬい":"ev_nui.png","写真集":"ev_photo.png","聖地":"ev_pilgrim.png",
+  "投票":"ev_vote.png","衝撃":"ev_scandal.png","同人":"ev_doujin.png","サブスク":"ev_subsc.png",
+  "LV":"ev_lv.png","体調":"ev_health.png","給料日":"ev_work.png","特典":"ev_live.png"
+};
+
+/* ===== ブラックジョーク：心の声（闇）。プレイ中ランダムに流れる ===== */
+const DARK_WHISPERS = [
+  "貯金残高と推しへの愛は、きれいに反比例する",
+  "クレカの限度額は、社会からの信頼の証",
+  "食費を削っても、推しは一向に減らない",
+  "推しはいつか卒業するが、リボの利子は一生添い遂げる",
+  "今日も健康に生きてしまった。チケット代が…",
+  "推しに使った額、棺に一緒に入れてほしい",
+  "節約とは、次の散財までの短い助走である",
+  "推しのためなら死ねる。でも家賃のためには起きられない",
+  "生活費とは、現場に行けなかった月にだけ存在する概念",
+  "メンタルは推しで回復し、明細で再起不能になる",
+  "気づけば部屋がグッズで埋まり、私の寝床が無い",
+  "推しの幸せが一番。私の口座残高は、まあ二番",
+  "ガチャは確率のゲーム、人生は無理ゲー",
+  "推しに認知される前に、消費者金融に認知された",
+  "推し活は不要不急。だが、生きるのも案外そうだ",
+  "明日の自分は他人。だから家賃も他人事",
+  "推しは推せるうちに推せ。金は無くなるときに無くなる",
+  "通帳を開かなければ、残高は減っていないのと同じ",
+  "尊さはプライスレス。請求書はプライスフル",
+  "推しの供給で生き、自分の需要で死ぬ",
+  "推しは画面の中。借金は、現実の中。",
+  "推しのためなら何でもできる。家賃の支払い以外は。",
+  "口座を見ない——それが、私の最強の節約術。",
+  "推しが尊いほど、私の家計は卑しくなる。",
+  "限界を超えた先に、また新しい限界があった。",
+  "現場に行く金はある。帰りの交通費が無いだけ。",
+  "推しは太陽。私は、その光熱費を払う者。",
+  "課金は一瞬、後悔は次の給料日まで。",
+  "推しの笑顔は無料。それ以外は、全部有料。",
+  "貯金箱の中身は、推しへの未払い金だった。",
+  "“限定”の三文字で、私の理性は毎回溶ける。",
+  "推し活に休みは無い。財布には、休みしか無い。",
+  "明細書は、私が書いたラブレターの束。",
+  "健康診断の結果より、推しの体調が心配だ。",
+  "推しが結婚しても祝える。私の残高は、祝えないが。",
+  "今月も生き延びた。支払いは、来月の私に丸投げで。",
+  "ガチャの天井より、私のカード限度額の方が低い。",
+  "推しのいない人生？それはもう、ただの家計簿だ。",
+  "節約上手とは、推しに全部使い切れる人のこと。",
+  "“今日だけ”を、もう三十回は言った気がする。",
+  "コンビニのおにぎり一個が、今月のフルコース。",
+  "推しは私の生きがい。家賃は私の、死にがい。",
+  "推し活してたら、いつのまにか債務者になっていた。",
+  "推しの新衣装は気になるのに、自分の冬服はボロボロ。",
+  "電気は止まっても、推しへの愛だけは灯っている。",
+  "推しに使った金は、思い出という名の不良債権。",
+  "“応援”とは、自己破産への優雅な第一歩のこと。",
+  "推しは私を知らない。でもサラ金は、私をよく知っている。",
+  "明日の食費で、今日の限定を買う。それが私の経済学。",
+  "推し活に出口は無い。あるのは、出費だけ。",
+  "推しの円盤は初回限定。私の人生は、無限ループ。",
+  "“尊い”の対義語は、たぶん“残高”。",
+  "推しのうちわは扇げる。家計の火は、消せない。",
+  "推しは羽ばたく。私の貯金も、どこかへ羽ばたいた。",
+  "推しへの愛に値段は無い。請求書には、しっかり有る。",
+  "貢ぐほど痩せていく。財布も、私も。",
+  "推し活は健康に悪い。でも、生きる理由になる。厄介だ。",
+  "通帳記入は、もはやホラー体験。",
+  "推しが「無理しないで」と言う。無理しか、してない。",
+  "来世も推す。今世の借金は、来世に持ち越す。",
+];
+let lastWhisper = -1;
+function showWhisper(){
+  let i; do{ i=Math.floor(Math.random()*DARK_WHISPERS.length); }while(i===lastWhisper);
+  lastWhisper=i;
+  const w=document.createElement("div");
+  w.className="whisper"; w.textContent="“"+DARK_WHISPERS[i]+"”";
+  document.querySelector(".stage").appendChild(w);
+  setTimeout(()=>w.remove(),2600);
+}
+
+/* ===================== サウンド（WebAudio合成・音源ファイル不要） ===================== */
+const SND = (()=>{
+  let ctx=null, master=null, on=true, bgmGain=null, sched=null, step=0, nextTime=0, playing=false;
+  const BPM=122, stepDur=(60/BPM)/4;            // 16分音符
+  const A=220;
+  const f=s=>A*Math.pow(2,s/12);
+  const PENTA=[0,3,5,7,10,12,15];               // Aマイナーペンタ
+  const LEAD =[0,2,4,3, 5,4,2,1, 3,4,5,6, 4,2,1,0];
+  function init(){
+    if(ctx) return;
+    try{
+      ctx=new (window.AudioContext||window.webkitAudioContext)();
+      master=ctx.createGain(); master.gain.value=0.0; master.connect(ctx.destination);
+      bgmGain=ctx.createGain(); bgmGain.gain.value=0.5; bgmGain.connect(master);
+      try{ const v=localStorage.getItem("oshikatsu_snd"); if(v==="0") on=false; }catch(e){}
+      master.gain.value = on?0.9:0;
+    }catch(e){ ctx=null; }
+  }
+  function blip(type,freq,t,dur,vol,dest){
+    if(!ctx) return;
+    const o=ctx.createOscillator(), g=ctx.createGain();
+    o.type=type; o.frequency.setValueAtTime(freq,t);
+    g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(vol,t+0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.connect(g); g.connect(dest||master); o.start(t); o.stop(t+dur+0.02);
+    return o;
+  }
+  function noise(t,dur,vol){
+    if(!ctx) return;
+    const n=ctx.createBufferSource(), b=ctx.createBuffer(1,ctx.sampleRate*dur,ctx.sampleRate);
+    const d=b.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1);
+    n.buffer=b; const g=ctx.createGain(); g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    const hp=ctx.createBiquadFilter(); hp.type="highpass"; hp.frequency.value=6000;
+    n.connect(hp); hp.connect(g); g.connect(master); n.start(t); n.stop(t+dur);
+  }
+  function kick(t){ const o=ctx.createOscillator(),g=ctx.createGain();
+    o.frequency.setValueAtTime(150,t); o.frequency.exponentialRampToValueAtTime(45,t+0.12);
+    g.gain.setValueAtTime(0.9,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.18);
+    o.connect(g); g.connect(master); o.start(t); o.stop(t+0.2); }
+  function scheduler(){
+    if(!ctx) return;
+    while(nextTime < ctx.currentTime + 0.12){
+      const s=step%16, t=nextTime;
+      if(s%4===0) kick(t);                                   // キック
+      if(s%4===2) noise(t,0.05,0.18);                        // ハット
+      if(s===0||s===8||s===6) blip("triangle",f(PENTA[0]-12),t,0.22,0.22,bgmGain); // ベース
+      if(s%2===0){ const semi=PENTA[LEAD[s]%PENTA.length]+12; blip("triangle",f(semi),t,0.18,0.10,bgmGain); } // アルペジオ
+      nextTime+=stepDur; step++;
+    }
+  }
+  return {
+    unlock(){ init(); if(ctx&&ctx.state==="suspended") ctx.resume(); },
+    startBGM(){ init(); if(!ctx||playing) return; playing=true; step=0; nextTime=ctx.currentTime+0.05;
+      sched=setInterval(scheduler,25); },
+    stopBGM(){ playing=false; clearInterval(sched); },
+    isOn(){ return on; },
+    toggle(){ on=!on; if(master) master.gain.value=on?0.9:0; try{localStorage.setItem("oshikatsu_snd",on?"1":"0");}catch(e){} return on; },
+    // ---- SFX ----
+    tap(){ init(); const t=ctx&&ctx.currentTime; if(ctx) blip("square",520,t,0.06,0.18); },
+    buy(){ if(!ctx)return; const t=ctx.currentTime; [0,0.07,0.14].forEach((d,i)=>blip("square",880-i*160,t+d,0.1,0.16)); },
+    save(){ if(!ctx)return; const t=ctx.currentTime; blip("sine",660,t,0.12,0.18); blip("sine",990,t+0.08,0.14,0.16); },
+    combo(n){ if(!ctx)return; const t=ctx.currentTime; blip("square",440+Math.min(n,8)*90,t,0.12,0.2); },
+    error(){ if(!ctx)return; const t=ctx.currentTime; blip("sawtooth",140,t,0.25,0.22); blip("sawtooth",138,t,0.25,0.18); },
+    crash(){ if(!ctx)return; const t=ctx.currentTime; [0,0.1,0.2].forEach((d,i)=>blip("sawtooth",200-i*40,t+d,0.2,0.2)); noise(t,0.4,0.2); },
+    quick(){ if(!ctx)return; const t=ctx.currentTime; blip("sine",1320,t,0.08,0.18); },
+    win(kind){ if(!ctx)return; const t=ctx.currentTime;
+      const seq = kind==="bad" ? [0,-2,-4,-7] : kind==="legend" ? [0,4,7,12,16] : [0,4,7,12];
+      seq.forEach((s,i)=>blip("triangle",f(s),t+i*0.12,0.4,0.22)); }
+  };
+})();
+function toggleSound(){ const on=SND.toggle(); document.getElementById("sndBtn").textContent=on?"🔊":"🔇"; }
+
+/* 選択肢アイコン：絵文字→PNG（無いものは絵文字のまま） */
+const EMOJI_ICON = {"🛒":"ic_cart.png","🛡️":"ic_shield.png","💝":"ic_heart.png","💖":"ic_heart.png","🧢":"ic_cap.png","🛌":"ic_futon.png","🎲":"ic_gacha.png","🎰":"ic_gacha.png","🎫":"ic_ticket.png"};
+
+/* 家賃イベント（10日目あたりに必ず挿入） */
+const RENT_EVENT = { tag:"家賃支払日", emoji:"🏠", title:"家賃支払日！", text:"今月の家賃 ¥70,000 をどうする？", isRent:true,
+  L:{ico:"🏠",txt:"払う",sub:"-¥70,000",eff:{},react:"🏠 家賃を死守した"},
+  R:{ico:"💔",txt:"後で払う",sub:"明日の自分へ",eff:{},react:"💀 明日の自分に託した…"} };
+
+/* ===================== 初期化 ===================== */
+function rollMonth(){
+  S.money = TUNING.money;
+  S.rent = TUNING.rent;
+  S.rentPaid = false;
+  S.oshi = 30;       // 推し活ポイント 0-100想定
+  S.mental = 60;     // 0-100
+  S.reco = 0;        // 認知度
+  S.combo = 0;       // 推し活コンボ
+  S.maxCombo = 0;
+  S.mentalBroke = false; // メンタル崩壊フラグ
+  S.numa = 0;        // 沼ゲージ 0-100（push-your-luck）
+  S.score = 0;       // 判断スコア（テンポ/コンボ）
+  S.quick = 0;       // 即決回数
+  S.timeouts = 0;    // 時間切れ回数
+  S.day = 1;
+  S.events = 0;
+  document.getElementById("monthInfo").innerHTML =
+    `今月の収入　<b>¥${(S.money).toLocaleString()}</b><br>`+
+    `家　　　賃　<b>¥${S.rent.toLocaleString()}</b><br>`+
+    `推しイベ　　<b>${2+Math.floor(Math.random()*3)}件</b><br>`+
+    `メンタル　　<b>ふつう</b>`;
+}
+
+function buildQueue(){
+  const pool = [...EVENTS];
+  for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
+  const n = 13 + Math.floor(Math.random()*4); // 13〜16イベント
+  queue = pool.slice(0, n);
+  // 家賃イベントを中盤(配列の40〜55%地点)に挿入
+  const pos = Math.floor(n*0.45) + Math.floor(Math.random()*2);
+  queue.splice(pos, 0, RENT_EVENT);
+  idx = 0;
+}
+
+/* ===================== 紙芝居 & ムービー ===================== */
+let SKIP_STORY = false, introShown = false;
+const PROLOGUE = [
+  { img:"story_p1.png", lines:[
+    "それは、なんでもない夜のはずだった。",
+    "バイトで擦り切れて、惰性で開いた配信アプリ。",
+    "そこに、彼がいた。",
+    "画面の中からまっすぐにこっちを見て、笑った。",
+    "——その瞬間、私の今月の家計は、静かに終わりを告げた。" ]},
+  { img:"story_p2.png", lines:[
+    "最初は、無料のスクショだけで満足していた。",
+    "次に、アクスタをひとつ。気づけば、棚をひとつ。",
+    "部屋は少しずつ、彼の色に染まっていった。",
+    "灰色だった毎日に、ネオンの光が灯る。",
+    "「推しのいる生活」は、こんなにも世界を明るくした。" ]},
+  { img:"story_p3.png", lines:[
+    "現場、グッズ、配信、課金、そしてまた現場。",
+    "ペンライトを振るたび、心の電池が満タンになる。",
+    "財布は軽くなったのに、足取りはなぜか軽やかで。",
+    "給料日は、もはや推しへの納税日だった。",
+    "私はたしかに、生きていた。——生きて、いたのだ。" ]},
+  { img:"story_p4.png", lines:[
+    "異変に気づいたのは、月の半ば。",
+    "何気なく開いた、銀行アプリ。",
+    "表示された数字を、二度見した。三度、見た。",
+    "通帳は嘘をつかない。SNSは、あんなに嘘ばかりなのに。",
+    "……あれ。今月の、家賃……これ、どこにあるの……？" ]},
+  { img:"story_p5.png", lines:[
+    "朝。机の上には、白い封筒がひとつ。",
+    "「家賃」の二文字が、今日はやけに重たい。",
+    "口座残高と、推しへの愛。天秤は、とっくに壊れている。",
+    "それでも、選ばなきゃいけない。払うのか、推すのか。",
+    "——さあ。たった3分で、今月を生き延びろ。" ]},
+];
+const ENDING = [
+  { img:"story_e1.png", lines:[
+    "怒涛の一ヶ月が、ようやく終わった。",
+    "散らかった床に座り込んで、天井を見上げる。",
+    "残ったのは、空っぽになった財布と、",
+    "天井まで積み上がった、推しのグッズと、",
+    "それから——うまく説明のつかない、満足感。" ]},
+  { img:"story_e2.png", lines:[
+    "スマホが光る。推しの、配信通知だ。",
+    "疲れ切った指で、それでも吸い込まれるようにタップする。",
+    "画面の向こうで、彼が今日も笑っている。",
+    "その笑顔をひと目見た、その瞬間に、",
+    "——なんだ。ぜんぶ、報われたじゃないか。" ]},
+  { img:"story_e3.png", lines:[
+    "床に転がったアクスタを、そっと拾い上げる。",
+    "後悔は、していない。",
+    "……たぶん、していない。",
+    "きっと、していないと、思う。たぶん。",
+    "ぎゅっと抱きしめると、不思議と涙がこぼれた。" ]},
+  { img:"story_e4.png", lines:[
+    "窓の外は、もうすっかり夜。",
+    "次の現場は、いつになるだろう。",
+    "そのために私は、また明日から働くのだ。",
+    "推しは、生きる理由にはならないかもしれない。",
+    "でも、生き延びる理由には、たしかになってくれる。" ]},
+  { img:"story_e5.png", lines:[
+    "朝が来た。新しい月が、また静かに始まる。",
+    "ペンライトを握り直して、私はゆっくり立ち上がる。",
+    "家賃は、まあ、なんとかなる。……たぶん、なる。",
+    "推しがいる限り、私の人生は、まだまだ続いていく。",
+    "——来月も、どうぞよろしくお願いします。" ]},
+];
+let storyList=[], storyIdx=0, lineIdx=0, storyImgIdx=0, storyDone=null, storyTimer=null, movieDone=null;
+function altOf(src){ return src.replace(/\.png$/i,"b.png"); }   // 2枚目（別アングル/表情）
+
+function playMovie(onDone){
+  movieDone = onDone;
+  const mv=document.getElementById("movie"), v=document.getElementById("opVideo");
+  v.onended=skipMovie; v.onerror=skipMovie;
+  v.src="op_movie.mp4"; mv.classList.remove("hidden");
+  v.muted=false; v.play().catch(()=>{ v.muted=true; v.play().catch(skipMovie); });
+}
+function skipMovie(){
+  const mv=document.getElementById("movie"), v=document.getElementById("opVideo");
+  try{ v.pause(); }catch(e){} v.onended=null; v.removeAttribute("src");
+  mv.classList.add("hidden");
+  const cb=movieDone; movieDone=null; if(cb) cb();
+}
+
+function playStory(list, onDone){
+  storyList=list; storyIdx=0; storyDone=onDone;
+  const s=document.getElementById("story");
+  const prog=document.getElementById("storyProg");
+  prog.innerHTML=list.map(()=>'<i></i>').join("");
+  document.getElementById("storySkipBtn").textContent = (list===ENDING) ? "結果へ ▶" : "スキップ ▶";
+  s.classList.remove("hidden");
+  showFrame(0);
+}
+function frameLines(item){ return item.lines || (item.text!=null ? [item.text] : [""]); }
+function showFrame(i){
+  storyIdx=i; lineIdx=0; storyImgIdx=0;
+  const fr=document.getElementById("storyFrame");
+  const item=storyList[i];
+  fr.classList.remove("show");
+  // 絵はフレーム切替時のみ読み込む（行送りでは再読込しない）
+  const img=new Image();
+  img.onload=img.onerror=()=>{
+    fr.style.backgroundImage=`url("${item.img}")`; void fr.offsetWidth; fr.classList.add("show");
+    showLine();
+  };
+  img.src=item.img;
+  [...document.getElementById("storyProg").children].forEach((d,k)=>d.classList.toggle("on",k<=i));
+}
+function trySwapImg(want){
+  if(want===storyImgIdx) return;
+  const base=storyList[storyIdx].img;
+  const src=want===1 ? altOf(base) : base;
+  const im=new Image();
+  im.onload=()=>{ document.getElementById("storyFrame").style.backgroundImage=`url("${src}")`; storyImgIdx=want; };
+  im.onerror=()=>{};   // 2枚目が無ければ1枚目のまま
+  im.src=src;
+}
+function showLine(){
+  const cap=document.getElementById("storyCap");
+  const lines=frameLines(storyList[storyIdx]);
+  // ナレーション後半で2枚目の絵へ切替（別アングル/表情）
+  trySwapImg(lineIdx >= Math.ceil(lines.length/2) ? 1 : 0);
+  cap.classList.remove("show");
+  cap.textContent=lines[lineIdx]||"";
+  void cap.offsetWidth;
+  if(cap.textContent) cap.classList.add("show");
+  clearTimeout(storyTimer);
+  storyTimer=setTimeout(storyNext, 2600);
+}
+function storyNext(){
+  clearTimeout(storyTimer);
+  const lines=frameLines(storyList[storyIdx]);
+  if(lineIdx < lines.length-1){ lineIdx++; showLine(); }        // 同じ絵で次の行
+  else if(storyIdx < storyList.length-1){ showFrame(storyIdx+1); } // 次の絵
+  else storySkip();
+}
+function storySkip(){
+  clearTimeout(storyTimer);
+  document.getElementById("story").classList.add("hidden");
+  const cb=storyDone; storyDone=null; if(cb) cb();
+}
+
+/* ===================== ゲーム進行 ===================== */
+function startGame(){
+  SND.unlock();   // ユーザー操作でオーディオ解禁
+  document.getElementById("sndBtn").textContent=SND.isOn()?"🔊":"🔇";
+  document.getElementById("startOverlay").classList.add("hidden");
+  document.getElementById("endOverlay").classList.add("hidden");
+  if(SKIP_STORY || introShown){ beginGame(); return; }  // 2回目以降は導入スキップ
+  introShown=true;
+  playMovie(()=> playStory(PROLOGUE, beginGame));        // OP → プロローグ紙芝居 → 本編
+}
+function beginGame(){
+  rollMonth(); buildQueue();
+  document.getElementById("endOverlay").classList.add("hidden");
+  running = true; busy = false; timeLeft = TUNING.time;
+  SND.startBGM();
+  logStart();
+  render(); nextEvent();
+  clearInterval(tick);
+  tick = setInterval(()=>{
+    timeLeft--;
+    updateTime();
+    if(timeLeft<=0){ endGame(); }
+  }, 1000);
+}
+
+function updateTime(){
+  const m = Math.max(0,Math.floor(timeLeft/60)), s = Math.max(0,timeLeft%60);
+  document.getElementById("timeVal").textContent = `${m}:${String(s).padStart(2,"0")}`;
+}
+
+function render(){
+  const mv=document.getElementById("moneyVal");
+  if(S.money<0){ mv.textContent="−¥"+Math.abs(S.money).toLocaleString(); mv.style.color="#ff5a7a"; }
+  else { mv.textContent="¥"+S.money.toLocaleString(); mv.style.color=""; }
+  // メーター: 生活力 vs 推し活。oshiが右、左は (100-oshi寄り) を money/mentalで補正
+  let oshiPct = clamp(S.oshi,0,100);
+  document.getElementById("fillOshi").style.width = oshiPct+"%";
+  document.getElementById("fillLife").style.width = (100-oshiPct)+"%";
+  document.getElementById("knob").style.left = oshiPct+"%";
+  // 警告
+  let w="";
+  if(S.money<0) w="💳 借金生活に突入…！";
+  else if(!S.rentPaid && S.day>=8) w="⚠️ 家賃がまだ…！";
+  else if(oshiPct>=80) w="⚠️ 推し活に寄りすぎ…！";
+  else if(S.mental<=25) w="⚠️ メンタル限界寸前…";
+  else if(S.money<10000) w="⚠️ 所持金ピンチ…！";
+  else if(S.combo>=4) w="🔥 沼、深し…！";
+  document.getElementById("warn").textContent = w;
+  // カレンダー
+  document.getElementById("calDay").textContent = S.day;
+  document.getElementById("calBar").style.width = (S.day/MAX_DAY*100)+"%";
+  // 沼ゲージ
+  const nb=document.getElementById("numaBar"), nm=document.getElementById("numaMul");
+  if(nb){ nb.style.width=(S.numa||0)+"%"; nb.style.filter=(S.numa>=85)?"drop-shadow(0 0 5px #ff3d8b)":""; }
+  if(nm) nm.textContent="x"+(1+(S.numa||0)/150).toFixed(1);
+  if(!document.getElementById("panel").classList.contains("hidden")) updateLiveStats();
+}
+
+function nextEvent(){
+  if(!running) return;
+  if(idx>=queue.length){ endGame(); return; }
+  const e = queue[idx];
+  // 日付を進める
+  S.day = Math.min(MAX_DAY, 2 + Math.floor((idx/queue.length)*(MAX_DAY-2)));
+  document.getElementById("cardTag").textContent = e.tag;
+  const ci=document.getElementById("cardImg"), ce=document.getElementById("cardEmoji");
+  const src = e.img || (USE_CATEGORY_ART ? CATEGORY_IMG[e.tag] : null);
+  ce.textContent=e.emoji;
+  if(src){ ce.style.display="none"; ci.style.display="block"; ci.src=src; }
+  else { ci.style.display="none"; ce.style.display="block"; }
+  document.getElementById("cardTitle").textContent = e.title;
+  document.getElementById("cardText").textContent = e.text;
+  setBtn("L", e.L); setBtn("R", e.R);
+  enableBtns(true);
+  logEvent(e);
+  render();
+  if(idx>0 && Math.random()<0.72) showWhisper();   // ブラックジョークの心の声
+  startDecisionTimer();
+}
+
+function startDecisionTimer(){
+  const dt=document.querySelector(".dtimer"), bar=document.getElementById("dbar");
+  dt.classList.remove("run","warn-flash"); void dt.offsetWidth;
+  bar.style.animationDuration=(DECISION_MS/1000)+"s";
+  dt.classList.add("run");
+  decisionStart=now();
+  clearTimeout(decisionTimer);
+  decisionTimer=setTimeout(decisionTimeout, DECISION_MS);
+}
+function stopDecisionTimer(){
+  clearTimeout(decisionTimer);
+  document.querySelector(".dtimer").classList.remove("run");
+}
+function decisionTimeout(){
+  if(busy || !running) return;
+  S.timeouts++; S.mental=clamp(S.mental-6,0,100); S.score=Math.max(0,S.score-1);
+  SND.error(); showFloat("⏰ 迷ってる間に時間切れ…","#ff5050");
+  choose(0, true);   // 自動的に安全側(我慢/生活)へ
+}
+
+function setBtn(side,c){
+  const span=document.getElementById("btn"+side+"ico");
+  const ip=EMOJI_ICON[c.ico];
+  if(ip){ const im=new Image(); im.src=ip; im.onerror=()=>{span.textContent=c.ico;}; span.textContent=""; span.appendChild(im); }
+  else span.textContent=c.ico;
+  document.getElementById("btn"+side+"txt").textContent=c.txt;
+  document.getElementById("btn"+side+"sub").textContent=c.sub||"";
+}
+function enableBtns(on){ document.getElementById("btnL").disabled=!on; document.getElementById("btnR").disabled=!on; }
+
+function choose(side, auto){
+  if(busy || !running) return;
+  busy = true; enableBtns(false);
+  stopDecisionTimer();
+  SND.tap();
+  const e = queue[idx];
+  const c = side===0 ? e.L : e.R;
+  const before = snap();
+  const numaMult = 1 + S.numa/150;   // 沼が深いほど推し獲得に倍率
+
+  // ▼ テンポ判定（即決ボーナス）
+  if(!auto){
+    const el = now()-decisionStart;
+    if(el < DECISION_MS*0.4){ S.score+=2; S.quick++; S.mental=clamp(S.mental+2,0,100); SND.quick(); showFloat("⚡即決ボーナス","#5be0a0"); }
+    else S.score+=1;
+  }
+
+  if(e.isRent){
+    if(side===0){ // 払う
+      if(S.money >= S.rent){ S.money -= S.rent; S.rentPaid=true; }
+      else { // 払えない→借りる演出、メンタル激減
+        S.rentPaid = false; S.mental -= 25; showFloat("残高不足…！","#ff5050");
+      }
+    } else { // 後で払う
+      S.rentPaid = false; S.oshi += 8; S.mental -= 6;
+    }
+  } else {
+    const f=c.eff;
+    if(f.money) S.money += f.money;
+    if(f.oshi)  S.oshi  = clamp(S.oshi+f.oshi,0,100);
+    if(f.mental)S.mental= clamp(S.mental+f.mental,0,100);
+    if(f.reco)  S.reco += f.reco;
+  }
+
+  // ▼ 沼ブースト：推し寄りで eff.oshi に倍率を上乗せ
+  if(side===1 && c.eff && c.eff.oshi>0){
+    const extra=Math.round(c.eff.oshi*(numaMult-1));
+    if(extra>0){ S.oshi=clamp(S.oshi+extra,0,100); showFloat("🔥沼ブースト +"+extra,"#ff3d8b"); }
+  }
+
+  // ▼ 推し活コンボ：推し寄り(右)を連続で選ぶと加速。沼が深いほど見返りも代償も増える
+  if(side===1){
+    S.combo++; S.maxCombo=Math.max(S.maxCombo,S.combo); S.score+=1;
+    if(S.combo>=2){
+      const bonus=S.combo-1;
+      S.oshi=clamp(S.oshi+bonus,0,100);
+      S.mental=clamp(S.mental-bonus,0,100);
+      if(S.money>0) S.money-=bonus*200;        // 沼の維持費
+      SND.combo(S.combo); showFloat("🔥推し活コンボ x"+S.combo,"#ff3d8b");
+    }
+    S.numa=Math.min(100, S.numa + 12 + S.combo*1.5);
+  } else { S.combo=0; S.numa=Math.max(0, S.numa-20); }
+
+  // ▼ 沼オーバーフロー：満タンで強制衝動買い
+  if(S.numa>=100){
+    const spend=4000+Math.floor(Math.random()*5)*1000;
+    S.numa=45; S.money-=spend; S.oshi=clamp(S.oshi+10,0,100); S.mental=clamp(S.mental-8,0,100);
+    SND.crash(); showFloat("🛒 沼が溢れて衝動買い −¥"+spend.toLocaleString(),"#ff5050"); showWhisper();
+  }
+
+  // 購入/収入のSFX
+  const dM=S.money-before.money;
+  if(dM<=-1000) SND.buy(); else if(dM>=1000) SND.save();
+
+  // ▼ 借金：所持金がマイナス＝リボ地獄。サーフェス表示
+  if(S.money<0 && before.money>=0){ showFloat("💳 リボ払い発動…","#ff5050"); }
+
+  // ▼ メンタル崩壊：0を割ると一度だけ強制散財＆闇落ち演出
+  if(S.mental<=0 && !S.mentalBroke){
+    S.mentalBroke=true; S.mental=12; S.money-=3000;
+    SND.crash(); showFloat("🧠 メンタル崩壊→衝動買い -¥3,000","#ff5050");
+    showWhisper();
+  }
+
+  // メンタル低下時のじわ演出
+  if(S.mental<=15 && Math.random()<.5) showFloat("メンタル限界…","#ff80c0");
+  if(S.reco>=8 && Math.random()<.4) showFloat("推しの反応が近い気がする！","#ffd84d");
+
+  const after = snap();
+  logChoice(e, side, c, before, after);
+  showFace(pickFace(before, after, e, side));
+  showReaction(c.react, side);
+  render();
+
+  setTimeout(()=>{
+    idx++; busy=false;
+    if(running) nextEvent();
+  }, 1050);
+}
+
+function pickFace(before, after, e, side){
+  const dO=after.oshi-before.oshi, dMe=after.mental-before.mental;
+  if(e.isRent && side===0 && !S.rentPaid) return "broke";   // 払おうとして残高不足
+  if(after.money < 8000) return "panic";
+  if(dO >= 10) return "happy";
+  if(dMe <= -10) return "cry";
+  if(dO <= 0 && dMe > 0) return "smug";                       // 節約/働く等で得意げ
+  return dO > 0 ? "happy" : "cry";
+}
+function showFace(name){
+  const f=document.getElementById("faceFx");
+  f.onerror=()=>{ f.style.display="none"; };
+  f.style.display=""; f.src="face_"+name+".png";
+  f.classList.remove("show"); void f.offsetWidth; f.classList.add("show");
+}
+function showReaction(txt, side){
+  const r=document.getElementById("reaction");
+  r.textContent=txt; r.classList.remove("show"); void r.offsetWidth; r.classList.add("show");
+  showFloat(side===0?"🏠 生活+":"💖 推し+", side===0?"#ffd84d":"#ff5ba0");
+}
+function showFloat(txt,color){
+  const f=document.createElement("div");
+  f.className="float"; f.textContent=txt; f.style.color=color;
+  f.style.left=(20+Math.random()*55)+"%"; f.style.top=(30+Math.random()*20)+"%";
+  document.querySelector(".stage").appendChild(f);
+  setTimeout(()=>f.remove(),1000);
+}
+
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+
+/* ===================== 結果判定 ===================== */
+function endGame(){
+  if(!running) return;
+  running=false; clearInterval(tick); stopDecisionTimer(); enableBtns(false);
+  SND.stopBGM();
+  S.day = MAX_DAY; render();
+
+  // ===== 判定（借金・崩壊を加味した拡張版） =====
+  let end, badge, titleName, fate;
+  const oshiHigh   = S.oshi >= TUNING.good;
+  const oshiMax    = S.oshi >= TUNING.leg;
+  const recognized = S.reco >= TUNING.reco;
+  const inDebt     = S.money < 0;            // 借金（リボ地獄）
+  const broke      = S.mentalBroke;          // メンタル崩壊した
+
+  if(!S.rentPaid){                            // 家賃滞納＝最悪
+    end="BAD"; badge="BAD END";
+    titleName=pickTitle(["推しに全振り・人生に半振り","給料日まであと3円","夜逃げ予備軍","大家のブラックリスト常連"]);
+    fate=pickTitle([
+      "家賃滞納。大家からの着信は止まらないが、推しは今日も私を知らない。",
+      "推しに全財産を捧げた結果、自分には差し押さえの通知が届いた。",
+      "“推し”という字は、手偏に“ご臨終”と書く。住む家を失った。",
+    ]);
+  } else if(inDebt){                          // 家賃は払ったが借金まみれ
+    end="BAD"; badge="BORROWED END";
+    titleName=pickTitle(["リボ払いの住人","利息に愛された女","クレカの限度額更新者"]);
+    fate=pickTitle([
+      "口座残高はマイナス。だが推し活ゲージは過去最高。たぶん、勝ち。",
+      "リボの利子が、二人目の推しとして君臨しはじめた。",
+      "家賃は守った。代わりに、未来の自分の現場参戦権をすべて前借りした。",
+    ]);
+  } else if(oshiMax && recognized && !broke){ // 完璧な勝者
+    end="LEGEND"; badge="LEGEND END";
+    titleName="認知された者";
+    fate=pickTitle([
+      "推しに認知された瞬間、これまでの散財がすべて尊い経費に思えた。",
+      "家賃も払い、借金もなく、推しに名を覚えられた。人類の到達点。",
+      "伝説になった。明細を見ても、もう手は震えない。",
+    ]);
+  } else if(oshiHigh){                         // 両立できた
+    end="GOOD"; badge="GOOD END";
+    titleName=pickTitle(["推しも生活も守った者","二刀流オタク","家計とオタクの両立","聖なる自転車操業"]);
+    fate=pickTitle([
+      "貯金は無いが思い出は満タン。通帳は、見なかったことにした。",
+      "推しも家賃も守った。胃に穴は開いたが、心は満たされている。",
+      "推しと生活、どちらも手放さなかった。奇跡か、ただの執念か。",
+    ]);
+  } else {                                     // 生存だが物足りない
+    end="NORMAL"; badge="NORMAL END";
+    titleName=pickTitle(["なんとか生存","節約の鬼","家賃死守オタク","推せなかった月"]);
+    fate=pickTitle([
+      "生き延びた。来月もこの茶番が、また始まる。",
+      "推し活は控えめ。心に穴は空いたが、口座には穴を空けなかった。",
+      "我慢した分だけ、SNSのみんなの戦利品が眩しかった。",
+    ]);
+  }
+  if(broke) fate += "（※メンタルは一度、完全に崩壊した）";
+
+  logEnd(end, titleName);
+  const ov=document.getElementById("endOverlay");
+  // 画像クォドラント：BORROWEDは画的にBAD枠を流用
+  const pos = (end==="BAD") ? "BAD" : end;
+  ov.className = "overlay end-pos-"+pos+" hidden";  // 紙芝居の後で表示
+  document.getElementById("endFate").textContent = fate;
+  document.getElementById("endTitleName").textContent = "🏅 称号：「"+titleName+"」";
+  const moneyStr = S.money<0 ? `<span style="color:#ff5a7a">−¥${Math.abs(S.money).toLocaleString()}（借金）</span>` : `¥${S.money.toLocaleString()}`;
+  document.getElementById("endStats").innerHTML =
+    `判定　　<b>${badge}</b><br>`+
+    `所持金　${moneyStr}<br>`+
+    `家賃　　${S.rentPaid?"✅ 完納":"❌ 滞納"}<br>`+
+    `推し活　${"💖".repeat(Math.max(1,Math.round(S.oshi/20)))}（${Math.round(S.oshi)}）<br>`+
+    `認知度　${S.reco>=TUNING.reco?"⭐認知！":"☆".repeat(Math.min(5,Math.max(1,Math.round(S.reco/2))))}<br>`+
+    `最大コンボ　🔥${S.maxCombo}　即決${S.quick}回<br>`+
+    `判断ランク　<b style="color:#ffd84d">${computeRank()}</b><br>`+
+    `<span style="color:#caa8e8; font-style:italic; font-size:12px">今月の教訓：「${DARK_WHISPERS[Math.floor(Math.random()*DARK_WHISPERS.length)]}」</span>`;
+  SND.win(end==="BAD"?"bad": end==="LEGEND"?"legend":"good");
+  // エンディング紙芝居 → 結果（「結果へ▶」で即スキップ可）
+  if(SKIP_STORY) revealEnd();
+  else playStory(ENDING, revealEnd);
+}
+function computeRank(){
+  const ev = LOG.entries.filter(e=>e.kind==="choice").length || 1;
+  const r = (S.score - S.timeouts*2) / (ev*2.2);
+  return r>=0.85?"S": r>=0.65?"A": r>=0.45?"B": r>=0.25?"C":"D";
+}
+function revealEnd(){
+  document.getElementById("story").classList.add("hidden");
+  document.getElementById("endOverlay").classList.remove("hidden");
+}
+function watchEnding(){
+  document.getElementById("endOverlay").classList.add("hidden");
+  playStory(ENDING, revealEnd);   // 観終わったら結果画面へ戻る
+}
+
+function endHeadline(end){
+  return {GOOD:"推しも生活も、守った。",NORMAL:"なんとか、生存。",BAD:"今月、終了のお知らせ。",LEGEND:"伝説の、オタク。"}[end];
+}
+function pickTitle(arr){return arr[Math.floor(Math.random()*arr.length)];}
+
+function resetGame(){
+  document.getElementById("endOverlay").classList.add("hidden");
+  document.getElementById("story").classList.add("hidden");
+  document.getElementById("movie").classList.add("hidden");
+  document.getElementById("startOverlay").classList.remove("hidden");
+  rollMonth();
+}
+
+/* 起動 */
+loadTuning(); applyChibi(); initPanel();
+rollMonth(); updateTime(); renderLog();
+</script>
+</body>
+</html>
